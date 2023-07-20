@@ -1,0 +1,43 @@
+ kubectl get all
+pod/db-b54cd94f4-kttnq        1/1     Running   0          15m
+pod/redis-868d64d78-66mg5     1/1     Running   0          15m
+pod/result-5d57b59f4b-9zmsn   1/1     Running   0          15m
+pod/vote-94849dc97-sp74z      1/1     Running   0          15m
+pod/worker-dd46d7584-kgl7g    1/1     Running   0          15m
+
+kubectl get svc
+NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+db           ClusterIP   10.107.75.38     <none>        5432/TCP         16m
+kubernetes   ClusterIP   10.96.0.1        <none>        443/TCP          16m
+redis        ClusterIP   10.106.125.227   <none>        6379/TCP         16m
+result       NodePort    10.101.165.166   <none>        5001:31001/TCP   16m
+vote         NodePort    10.100.236.22    <none>        5000:31000/TCP   16m
+
+Q7. On voting cat/dog the voting log is added and vote count increases, which is saved into db 
+
+Q8. 
+kubectl delete pod/vote-94849dc97-sp74z
+Deleting the voting pod- the old voting pod is deleted and a new pod is spawned in its place, same data stored in db is fetched.
+kubectl delete pod/worker-dd46d7584-kgl7g
+Delete worker pod- the old worker pod is deleted and new pod has come up, logs of all the votes are gone as it was in old pods, but the data is stored and avaiable.
+kubectl delete pod/db-b54cd94f4-kttnq
+Delete db pod- old db pod terminating, new db pod is coming up.
+
+Q10.
+kubectl get all
+NAME                          READY   STATUS    RESTARTS   AGE
+pod/db-b54cd94f4-rmwhn        1/1     Running   0          39s
+pod/redis-868d64d78-66mg5     1/1     Running   0          22m
+pod/result-5d57b59f4b-9zmsn   1/1     Running   1          22m
+pod/vote-94849dc97-sp74z      1/1     Running   0          20m
+pod/worker-dd46d7584-kgl7g    1/1     Running   1          18m
+
+All data of previous votes got deleted as k8 is a stateless application.
+The worker restart happens after the db pod goes down as its not able to access the db would have caused an exception (worker is trying to connected to db which is connected to reddis).
+Db connection is a socket connection (connecting and writing to db with querry).
+After the disconnection the old db is deleted hence the data is lost.
+So to connect and create new connection the container has to restart so the worker can use the socket to create a connection. Hence worker is reatrted to use the socket to create new db to store.
+Same happens to result as its using socket to get data when the db is not found after waiting with the current timeout, the pod restarts and brings up the data.
+
+Q11.
+The new result pod is created on deletion.
